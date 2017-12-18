@@ -1,0 +1,78 @@
+(define (myinterpreter lst)
+  (cons (cond ((not (null? (car lst)))  (eval-prog (car lst)) ))
+        (cond ((not (null? (cdr lst)))  (interpret (cdr lst)) )
+          ((null? (cdr lst)) '())
+        )
+  )
+)
+
+(define (eval-prog l)
+    (cond ((null? l) "Empty program")
+      ((equal? (car l) 'prog) (eval-expr (cdr l) '() ))     
+      (not (equal? (car l) 'prog) "Expected prog")
+    )
+)
+
+(define (eval-expr expr bind)
+    (cond ((null? expr) "Empty expr")
+      ((integer? (car expr)) (car expr))
+      
+      ((symbol? (car expr)) (eval-bindings (car expr) 
+                                           bind))
+                                         
+      ((equal? (car (car expr)) 'myignore) 0)
+                                                  
+      ((equal? (car (car expr)) 'myadd) (eval-myadd (list(car(cdr(car expr)))) 
+                                                    (list(car(cdr(cdr(car expr)))))
+                                                    bind))
+                                                  
+      ((equal? (car (car expr)) 'mymul) (eval-mymul (list(car(cdr(car expr)))) 
+                                                    (list(car(cdr(cdr(car expr)))))
+                                                    bind))
+                                                  
+      ((equal? (car (car expr)) 'myneg) (eval-myneg (car expr)) 
+                                                    bind)
+                                                  
+      ((equal? (car (car expr)) 'mylet) (eval-mylet (list(car(cdr(car expr)))) 
+                                                    (list(car(cdr(cdr(car expr))))) 
+                                                    (list(car(cdr(cdr(cdr(car expr))))))
+                                                    bind))
+    )
+)
+
+(define (eval-bindings id bind)
+  (cond ((null? bind) 0)
+    ((equal? id (car(car bind))) (cdr(car bind)) )
+    ((not (null? (cdr bind))) (eval-bindings id bind))
+  )
+)
+
+(define (eval-myadd expr1 expr2 bind)
+  (+ (eval-expr expr1 bind) (eval-expr expr2 bind))
+)
+
+(define (eval-mymul expr1 expr2 bind)
+  (* (eval-expr expr1 bind) (eval-expr expr2 bind))
+)
+
+(define (eval-myneg expr bind)
+  (* -1 (eval-expr (cdr expr) bind))
+)
+
+(define (eval-mylet id expr1 expr2 bind)
+  (let ((temp (eval-expr expr1 bind)))
+       (eval-expr expr2 (cons (cons (car id) temp) bind)))
+)
+
+(define l '(   
+  
+  (prog 5)
+  (prog (myadd (myadd 7 (myignore (mymul 4 5))) (mymul 2 5)))
+  (prog (mylet z (myadd 4 5) (mymul z 2)))
+  (prog (mylet a 66 (myadd (mylet b (mymul 2 4) (myadd 2 b)) (mymul 2 a))))
+  (prog (mylet x 66 (myadd (mylet x (mymul 2 4) (myadd 2 x)) (mymul 2 x))))
+
+))
+
+(myinterpreter l)
+
